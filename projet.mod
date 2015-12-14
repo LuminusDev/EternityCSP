@@ -27,41 +27,22 @@ range O = 1..NbOrientations;
 range P = 1..NbPieces;
 range PP = 1..NbPieces*NbOrientations;
 
-tuple Piece {
-  int color[1..4];
-};
-
-Piece Pieces[1..NbPieces] = ...;
- /*Piece PiecesOrientees[p in PP] = <[ Pieces[floor((p-1)/4)+1].color[(p-1)%4+1],
-									Pieces[floor((p-1)/4)+1].color[p%4+1],
-									Pieces[floor((p-1)/4)+1].color[(p+1)%4+1],
-									Pieces[floor((p-1)/4)+1].color[(p+2)%4+1] ]>;
-*/
-Piece PiecesOrientees[p in PP] = <[ q : Pieces[floor((p-1)/4) + 1 ].color[(p-1+q-1)%4 +1] | q in O]>;
-
-execute{
- 	for(var p in P){
- 		PiecesOrientees[4*(p-1)+1] = 
- 		PiecesOrientees[4*(p-1)+2] = 
- 		PiecesOrientees[4*(p-1)+3] = 
- 		PiecesOrientees[4*(p-1)+4] =   
-  	} 	   
-}  
-//{Piece} PiecesEns = {Pieces[i] | i in 1..NbPieces};
+int Pieces[P][O] = ...;
+int PiecesOrientees[p in PP][o in O] = Pieces[ftoi(floor((p-1)/4))+1][(p+o-2)%4+1];
 
 //Variables
-dvar int placement[Lines][Columns] in P;
-dvar int orientation[Lines][Columns] in O;
-dvar int haut[Lines][Columns] in Colors;
-dvar int droite[Lines][Columns] in Colors;
-dvar int bas[Lines][Columns] in Colors;
-dvar int gauche[Lines][Columns] in Colors;
+dvar int placement[Lines][Columns] in P; //index de la piece placée sur une case (sans orientation)
+dvar int orientation[Lines][Columns] in O; //orientation d'une case
+dvar int haut[Lines][Columns] in Colors; //couleur du haut d'une case
+dvar int droite[Lines][Columns] in Colors; //couleur de la droite d'une case
+dvar int bas[Lines][Columns] in Colors; //couleur du bas d'une case
+dvar int gauche[Lines][Columns] in Colors; //couleur de la gauche d'une case
 
-dexpr int pieceOrientee[l in Lines][c in Columns] = 4*placement[l][c] + orientation[l][c] -1 ;
-//dexpr int colorPiece[p in 1..NbPieces][i in 1..4] = Pieces[p].color[((i-1+ori entation[p]-1)%4)+1];
-
-execute {
-  cp.param.FailLimit = 10000;
+execute{
+	var f = cp.factory;
+ 	var phase1 = f.searchPhase(orientation);
+ 	var phase2 = f.searchPhase(placement);
+ 	cp.setSearchPhases(phase1, phase2);
 }
 
 subject to {
@@ -95,13 +76,13 @@ subject to {
   // Liaison couleurs / Pieces : 1 pièce correspond à une case et une orientation
   forall(l in Lines){
     forall(c in Columns){
-    	 forall(p in PP){
-    	   (placement[l][c] == (p-1)/4+1 && orientation[l][c] == (p-1)%4+1) =>
-    		(pieceOrientee[p].color[1] == haut[l][c] &&
-    		pieceOrientee[p].color[2] == droite[l][c] &&
-    		pieceOrientee[p].color[3] == bas[l][c] &&
-    		pieceOrientee[p].color[4] == gauche[l][c]  );  
-      }    	   
+      forall(p in PP){
+    	   (placement[l][c] == ftoi(floor((p-1)/4))+1 && orientation[l][c] == (p-1)%4+1) =>
+    		( PiecesOrientees[p][1] == haut[l][c] &&
+    		PiecesOrientees[p][2] == droite[l][c] &&
+    		PiecesOrientees[p][3] == bas[l][c] &&
+    		PiecesOrientees[p][4] == gauche[l][c]  );  
+      }  	   
     }
-  }   
+  } 
 }
