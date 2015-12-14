@@ -28,7 +28,31 @@ range P = 1..NbPieces;
 range PP = 1..NbPieces*NbOrientations;
 
 int Pieces[P][O] = ...;
+// toutes les pieces avec les 4 orientations possibles
 int PiecesOrientees[p in PP][o in O] = Pieces[ftoi(floor((p-1)/4))+1][(p+o-2)%4+1];
+
+// ensemble des pieces contenant un 1 (pour aller sur un bord)
+{int} PiecesBords = {};
+
+// ensemble des pieces contenant deux 1 d'affilés (pour aller sur un coin) 
+{int} PiecesCoins = {};
+  
+execute{
+	for(var p in P){
+		if( Pieces[p][1] == 1 
+								|| Pieces[p][2] == 1
+								|| Pieces[p][3] == 1
+								|| Pieces[p][4] == 1 ){
+			PiecesBords.add(p);
+		}
+		if ( (Pieces[p][1] == 1 && Pieces[p][2] == 1)
+								|| (Pieces[p][2] == 1 && Pieces[p][3] == 1)
+								|| (Pieces[p][3] == 1 && Pieces[p][4] == 1)
+								|| (Pieces[p][4] == 1 && Pieces[p][1] == 1)){
+        	PiecesCoins.add(p);
+        }								  
+ 	}	   
+}  
 
 //Variables
 dvar int placement[Lines][Columns] in P; //index de la piece placée sur une case (sans orientation)
@@ -52,13 +76,25 @@ subject to {
   // tous les bords n'ont pas de couleurs  
   forall(c in Columns){
 	haut[1][c] == 1;
-	bas[NbLines][c] == 1;  	  
+	bas[NbLines][c] == 1;
+ 	// fixation des pieces sur les bords
+ 	or(p in PiecesBords)placement[1][c] == p;
+	or(p in PiecesBords)placement[NbLines][c] == p;  
   }
   
   forall(l in Lines){
 	gauche[l][1] == 1;
-	droite[l][NbColumns] == 1;  	  
+	droite[l][NbColumns] == 1;
+	// fixation des pieces sur les bords
+	or(p in PiecesBords)placement[l][1] == p;
+	or(p in PiecesBords)placement[l][NbColumns] == p;  
   }
+  
+  // fixation des pieces dans les coins
+  or(p in PiecesCoins)placement[1][1] == p;
+  or(p in PiecesCoins)placement[1][NbColumns] == p;
+  or(p in PiecesCoins)placement[NbLines][1] == p;
+  or(p in PiecesCoins)placement[NbLines][NbColumns] == p;
   
   // Contraintes match couleurs
   forall(l in 2..NbLines){
